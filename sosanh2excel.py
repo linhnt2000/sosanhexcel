@@ -103,4 +103,4 @@ def compare_excel(file1, file2, column_name, output_file="compare_result.xlsx"):
     print("🟨 Vàng: Chỉ có trong file 2")
 
 # --- Ví dụ chạy ---
-compare_excel("payments-Copy.xlsx", "transactions.xlsx", column_name="Payments_id")
+compare_excel("test 1.xlsx", "test 2.xlsx", column_name="Tên HP")

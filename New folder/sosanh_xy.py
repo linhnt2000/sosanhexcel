@@ -2,6 +2,17 @@ import pandas as pd
 from openpyxl import load_workbook
 from openpyxl.styles import PatternFill, Font, Alignment
 
+def normalize_value(val):
+    if pd.isna(val):
+        return ""
+
+    val = str(val).strip()
+
+    # Nếu dạng xxx.0 thì bỏ .0
+    if val.endswith(".0"):
+        val = val[:-2]
+
+    return val
 
 def compare_excel_x_y(
     file1,
@@ -11,6 +22,8 @@ def compare_excel_x_y(
     output_file="compare_xy_result.xlsx",
     sheet_name="Result"
 ):
+    
+    
     # =============================
     # 1. Đọc dữ liệu
     # =============================
@@ -22,18 +35,24 @@ def compare_excel_x_y(
             raise ValueError(f"❌ Thiếu cột '{col}' trong một trong hai file")
 
     # Chuẩn hóa dữ liệu
-    df1[col_x] = df1[col_x].astype(str).str.strip()
-    df2[col_x] = df2[col_x].astype(str).str.strip()
-    df1[col_y] = df1[col_y].astype(str).str.strip()
-    df2[col_y] = df2[col_y].astype(str).str.strip()
+    df1[col_x] = df1[col_x].apply(normalize_value)
+    df2[col_x] = df2[col_x].apply(normalize_value)
+
+    df1[col_y] = df1[col_y].apply(normalize_value)
+    df2[col_y] = df2[col_y].apply(normalize_value)
 
     # =============================
-    # 2. Map x → y của file 2
+    # 2. Map x → SET(y) của file 2
     # =============================
-    map_y = df2.set_index(col_x)[col_y].to_dict()
+    map_y = (
+        df2
+        .groupby(col_x)[col_y]
+        .apply(set)
+        .to_dict()
+    )
 
     # =============================
-    # 3. So sánh x – y (logic độc lập)
+    # 3. So sánh x – y (ĐÚNG 1–N)
     # =============================
     df1["__xy_status__"] = ""
 
@@ -44,10 +63,11 @@ def compare_excel_x_y(
         if x_val not in map_y:
             df1.loc[i, "__xy_status__"] = "yellow"
         else:
-            if y_val == map_y[x_val]:
+            if y_val in map_y[x_val]:
                 df1.loc[i, "__xy_status__"] = "green"
             else:
                 df1.loc[i, "__xy_status__"] = "red"
+
 
     # =============================
     # 4. Ghi ra Excel
@@ -107,9 +127,9 @@ def compare_excel_x_y(
     print("🟨 Không trùng x")
 
 compare_excel_x_y(
-    file1="payments (1).xlsx",
-    file2="bchp.xlsx",
-    col_x="Name",
-    col_y="Amount",
+    file1="Test2.xlsx",
+    file2="Test1.xlsx",
+    col_x="MSSV",
+    col_y="Trạng thái",
     output_file="doi_soat_xy.xlsx"
 )
